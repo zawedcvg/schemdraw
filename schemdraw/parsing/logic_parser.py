@@ -79,6 +79,10 @@ def to_tree(pres):
     func = pres[1]
     inputs = pres[::2]
 
+    # print(f"func is {func}")
+    # print(f"inputs are {inputs}")
+    # input()
+
     func = {'&': 'and', '∧': 'and',
             '|': 'or', '∨': 'or',  '+': 'or',
             '⊕': 'xor', '⊻': 'xor'}.get(func, func)
@@ -114,7 +118,9 @@ def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
 
     dtree = buchheim(tree)
 
-    def drawit(root, depth=0, outlabel=None):
+    label_count = 0
+
+    def drawit(root, depth=0, outlabel=None, curr_count_thing=0):
         ''' Recursive drawing function '''
         elmdefs = {'and': logic.And,
                    'or': logic.Or,
@@ -123,31 +129,36 @@ def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
                    'xnor': logic.Xnor,
                    'nor': logic.Nor,
                    'not': logic.Not}
-        elm = elmdefs.get(root.node, logic.And)
+        elm = elmdefs.get(root.node, logic.And) #if gate not in defintions, use logic.And
 
         x = root.y * -gateW   # buchheim draws vertical trees, so flip x-y.
         y = -root.x * gateH
+
+        to_use_label = chr(ord("A") + curr_count_thing)
+        curr_count_thing += 1
 
         g = elm(d='r', at=(x, y), anchor='end',
                 l=gateW, inputs=len(root.children))
         if outlabel:
             g.label(outlabel, loc='end')
-        
+
         for i, child in enumerate(root.children):
             anchorname = 'start' if elm in [logic.Not, logic.Buf] else f'in{i+1}'
             if child.node not in elmdefs:
                 g.label(child.node, loc=anchorname)
+
+        g.label(to_use_label, loc="top")
 
         drawing.add(g)
 
         for i, child in enumerate(root.children):
             anchorname = 'start' if elm in [logic.Not, logic.Buf] else f'in{i+1}'
             if child.node in elmdefs:
-                childelm = drawit(child, depth+1)  # recursive
+                childelm, curr_count_thing = drawit(child, depth+1, curr_count_thing=curr_count_thing)  # recursive
                 drawing.add(RightLines(at=(g, anchorname), to=childelm.end))
-        return g
+        return g, curr_count_thing
 
-    drawit(dtree, outlabel=outlabel)
+    drawit(dtree, outlabel=outlabel, curr_count_thing=label_count)
     return drawing
 
 
@@ -173,6 +184,9 @@ def logicparse(expr: str, gateW: float = 2, gateH: float = .75,
             schemdraw.Drawing with logic tree
     '''
     parsed = parse_string(expr)
+    # print(parsed)
+    # print("here")
     tree = to_tree(parsed)
+    print(tree)
     drawing = drawlogic(tree, gateH=gateH, gateW=gateW, outlabel=outlabel)
     return drawing
