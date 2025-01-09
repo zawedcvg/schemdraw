@@ -7,6 +7,7 @@ Example:
 '''
 from typing import Optional
 import pyparsing  # type: ignore
+from circuit import Circuit, leaf_node, gate_node
 
 from .. import schemdraw
 from .. import logic
@@ -120,7 +121,7 @@ def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
 
     label_count = 0
 
-    def drawit(root, depth=0, outlabel=None, curr_count_thing=0):
+    def drawit(root, depth=0, outlabel=None, curr_index=0):
         ''' Recursive drawing function '''
         elmdefs = {'and': logic.And,
                    'or': logic.Or,
@@ -134,18 +135,33 @@ def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
         x = root.y * -gateW   # buchheim draws vertical trees, so flip x-y.
         y = -root.x * gateH
 
-        to_use_label = chr(ord("A") + curr_count_thing)
-        curr_count_thing += 1
+        #WARNING: going to assume that there are only two children
+
+        to_use_label = chr(ord("A") + curr_index)
+        curr_index += 1
+
+        # The code basically always draws a gate, and if the next things are inputs draws that too and quits. else it goes to the recursive function.
+
+        left_node = None
+        right_node = None
 
         g = elm(d='r', at=(x, y), anchor='end',
                 l=gateW, inputs=len(root.children))
         if outlabel:
             g.label(outlabel, loc='end')
 
+        # NOTE: This part is slightly weird? Why not just one loop
+
         for i, child in enumerate(root.children):
             anchorname = 'start' if elm in [logic.Not, logic.Buf] else f'in{i+1}'
+            # in probably stands for input number
+            # so basically if child.node is an input put it as a input number thing. else something else idc
             if child.node not in elmdefs:
                 g.label(child.node, loc=anchorname)
+                if i == 0:
+                    left_node = leaf_node(child.node)
+                else:
+                    right_node = leaf_node(child.node)
 
         g.label(to_use_label, loc="top")
 
@@ -154,12 +170,18 @@ def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
         for i, child in enumerate(root.children):
             anchorname = 'start' if elm in [logic.Not, logic.Buf] else f'in{i+1}'
             if child.node in elmdefs:
-                childelm, curr_count_thing = drawit(child, depth+1, curr_count_thing=curr_count_thing)  # recursive
+                childelm, curr_index, output_node = drawit(child, depth+1, curr_index=curr_index)  # recursive
                 drawing.add(RightLines(at=(g, anchorname), to=childelm.end))
-        return g, curr_count_thing
+                if i == 0:
+                    left_node = output_node
+                else:
+                    right_node = output_node
 
-    drawit(dtree, outlabel=outlabel, curr_count_thing=label_count)
-    return drawing
+        node = gate_node(left_node, right_node, root.node, to_use_label)
+        return g, curr_index, node
+
+    _, _, node = drawit(dtree, outlabel=outlabel, curr_index=label_count)
+    return drawing, node
 
 
 def logicparse(expr: str, gateW: float = 2, gateH: float = .75,
@@ -188,5 +210,5 @@ def logicparse(expr: str, gateW: float = 2, gateH: float = .75,
     # print("here")
     tree = to_tree(parsed)
     print(tree)
-    drawing = drawlogic(tree, gateH=gateH, gateW=gateW, outlabel=outlabel)
-    return drawing
+    drawing, node = drawlogic(tree, gateH=gateH, gateW=gateW, outlabel=outlabel)
+    return drawing, node
