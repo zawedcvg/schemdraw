@@ -7,7 +7,7 @@ Example:
 '''
 from typing import Optional
 import pyparsing  # type: ignore
-from circuit import Circuit, leaf_node, gate_node
+from .circuit import Node, leaf_node, double_operand_gate_node, single_operand_gate_node
 
 from .. import schemdraw
 from .. import logic
@@ -121,6 +121,10 @@ def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
 
     label_count = 0
 
+    SINGLE_OPERAND_OPS = ("not", "~", "-")
+
+    DOUBLE_OPERAND_OPS = ("and", "nand", "or", "nor", "xor", "xnor", "=>", "implies", "=", "!=")
+
     def drawit(root, depth=0, outlabel=None, curr_index=0):
         ''' Recursive drawing function '''
         elmdefs = {'and': logic.And,
@@ -135,7 +139,9 @@ def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
         x = root.y * -gateW   # buchheim draws vertical trees, so flip x-y.
         y = -root.x * gateH
 
+
         #WARNING: going to assume that there are only two children
+        #TODO: Fix this to allow for any number of children
 
         to_use_label = chr(ord("A") + curr_index)
         curr_index += 1
@@ -151,7 +157,6 @@ def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
             g.label(outlabel, loc='end')
 
         # NOTE: This part is slightly weird? Why not just one loop
-
         for i, child in enumerate(root.children):
             anchorname = 'start' if elm in [logic.Not, logic.Buf] else f'in{i+1}'
             # in probably stands for input number
@@ -177,7 +182,10 @@ def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
                 else:
                     right_node = output_node
 
-        node = gate_node(left_node, right_node, root.node, to_use_label)
+        if root.node in DOUBLE_OPERAND_OPS:
+            node = double_operand_gate_node(left_node, right_node, root.node, to_use_label)
+        else:
+            node = single_operand_gate_node(left_node, root.node, to_use_label)
         return g, curr_index, node
 
     _, _, node = drawit(dtree, outlabel=outlabel, curr_index=label_count)
@@ -185,7 +193,7 @@ def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
 
 
 def logicparse(expr: str, gateW: float = 2, gateH: float = .75,
-               outlabel: Optional[str] = None) -> schemdraw.Drawing:
+               outlabel: Optional[str] = None) -> (schemdraw.Drawing, Node):
     ''' Parse a logic string expression and draw the gates in a schemdraw Drawing
 
         Logic expression is defined by string using 'and', 'or', 'not', etc.
@@ -209,6 +217,5 @@ def logicparse(expr: str, gateW: float = 2, gateH: float = .75,
     # print(parsed)
     # print("here")
     tree = to_tree(parsed)
-    print(tree)
     drawing, node = drawlogic(tree, gateH=gateH, gateW=gateW, outlabel=outlabel)
     return drawing, node

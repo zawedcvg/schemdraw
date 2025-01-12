@@ -26,14 +26,18 @@ OPERATION_ALIASES = {
 
 SINGLE_OPERAND_OPS = ("not", "~", "-")
 
-DOUBLE_OPERAND_OPS = ("and", "nand", "or", "nor", "xor", "xnor" "=>", "implies", "=", "!=")
+DOUBLE_OPERAND_OPS = ("and", "nand", "or", "nor", "xor", "xnor", "=>", "implies", "=", "!=")
 
 def leaf_node(value):
     node = Node(left=None, right=None, gate=None, label=None, is_leaf_node=True, value=value)
     return node
 
-def gate_node(left, right, gate, label):
+def double_operand_gate_node(left, right, gate, label):
     node = Node(left=left, right=right, gate=gate, label=label, is_leaf_node=False)
+    return node
+
+def single_operand_gate_node(left, gate, label):
+    node = Node(left=left, right=None, gate=gate, label=label, is_leaf_node=False)
     return node
 
 class Node:
@@ -44,8 +48,6 @@ class Node:
         self.label = label
         self.is_leaf_node = is_leaf_node
         self.value = value
-
-
 
     def evaluate_given_inputs(self, inputs, faulty_set):
 
@@ -99,8 +101,8 @@ if __name__ == "__main__":
     b_node = leaf_node("b")
     c_node = leaf_node("c")
 
-    a_and_b_node = gate_node(a_node, b_node, "and", "A")
-    a_and_b_or_c_node = gate_node(a_and_b_node, c_node, "or", "B")
+    a_and_b_node = double_operand_gate_node(a_node, b_node, "and", "A")
+    a_and_b_or_c_node = double_operand_gate_node(a_and_b_node, c_node, "or", "B")
 
     circuit = Circuit()
 
