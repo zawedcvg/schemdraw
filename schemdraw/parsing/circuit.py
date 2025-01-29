@@ -187,15 +187,13 @@ class Circuit:
 
     def save_circuit(self):
         circuit_representation = []
-        print(f"self.nodes are {self.nodes}")
-        input()
         for i in self.gates.values():
             # if self.
             if i.label == self.head:
                 circuit_representation.insert(0, i.representation())
             else:
                 circuit_representation.append(i.representation())
-        print(circuit_representation)
+        return circuit_representation
 
 
 def find_minimal_faulty_gates(circuit: Circuit, inputs, expected_output):
@@ -227,7 +225,46 @@ def minimal_list_of_lists(lists):
     return minimal_set
 
 
-# a_node = Node(None, None, None, None, True, "a")
+def create_circuit_from_list(circuit_representation: list):
+    # a recursive method. first get the head node. then iterate through the list
+    # to get every gate as a dictionary. and then.
+    _, _, _, head_label, _, _ = circuit_representation[0]
+    req_dict = {}
+    # TODO: remove the part about value as it is not needed.
+    # Also it can never be a leaf node so remove that too?
+    for (
+        left_notation,
+        right_notation,
+        gate,
+        label,
+        is_leaf_node,
+        value,
+    ) in circuit_representation:
+        # WARNING: need to make changes here once there are multiple children
+        req_dict[label] = [gate, left_notation, right_notation]
+
+    def traverse_and_create_node(label):
+        print(label)
+        if label.islower():
+            return leaf_node(label)
+
+        gate, left_notation, right_notation = req_dict[label]
+
+        if gate in SINGLE_OPERAND_OPS:
+            left_node = traverse_and_create_node(left_notation)
+            return single_operand_gate_node(left_node, gate, label)
+        elif gate in DOUBLE_OPERAND_OPS:
+            left_node = traverse_and_create_node(left_notation)
+            right_node = traverse_and_create_node(right_notation)
+            return double_operand_gate_node(left_node, right_node, gate, label)
+        else:
+            print("Unexpected gate. Exiting")
+            exit()
+
+    head_node = traverse_and_create_node(head_label)
+    return create_circuit_with_head_node(head_node)
+
+
 
 if __name__ == "__main__":
     # TODO: add more sanity tests
@@ -258,5 +295,10 @@ if __name__ == "__main__":
     # faulty_gates are B, C and A
     k, node = logic_parser.logicparse(checker_circuit)
     circuit = create_circuit_with_head_node(node)
-    circuit.save_circuit()
+    circuit_rep = circuit.save_circuit()
+    a = create_circuit_from_list(circuit_rep)
+    saved_circuit = a.save_circuit()
+    print("----------------------------------------")
+    print(saved_circuit)
+    print(circuit_rep)
     k.draw()
