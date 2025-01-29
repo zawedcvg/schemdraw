@@ -1,22 +1,24 @@
-''' Module for converting a logic string expression into a schemdraw.Drawing.
+""" Module for converting a logic string expression into a schemdraw.Drawing.
 
 Example:
 
 >>> logicparse("a and (b or c)")
 
-'''
-from typing import Optional
-import pyparsing  # type: ignore
-from .circuit import Node, leaf_node, double_operand_gate_node, single_operand_gate_node
+"""
 
-from .. import schemdraw
-from .. import logic
+from typing import Optional
+
+import pyparsing  # type: ignore
+
+from .. import logic, schemdraw
 from ..elements import RightLines
 from .buchheim import buchheim
+from .circuit import Node, double_operand_gate_node, leaf_node, single_operand_gate_node
 
 
-class LogicTree():
-    ''' Organize the logic gates into tree structure '''
+class LogicTree:
+    """Organize the logic gates into tree structure"""
+
     def __init__(self, node, *children):
         self.node = node
         self.children = children if children else []
@@ -33,43 +35,48 @@ class LogicTree():
 
 
 def parse_string(logicstr):
-    ''' Parse the logic string using pyparsing '''
-    and_ = pyparsing.Keyword('and')
-    or_ = pyparsing.Keyword('or')
-    nor_ = pyparsing.Keyword('nor')
-    nand_ = pyparsing.Keyword('nand')
-    xor_ = pyparsing.Keyword('xor')
-    xnor_ = pyparsing.Keyword('xnor')
-    not_ = pyparsing.Keyword('not')
-    true_ = pyparsing.Keyword('true')
-    false_ = pyparsing.Keyword('false')
+    """Parse the logic string using pyparsing"""
+    and_ = pyparsing.Keyword("and")
+    or_ = pyparsing.Keyword("or")
+    nor_ = pyparsing.Keyword("nor")
+    nand_ = pyparsing.Keyword("nand")
+    xor_ = pyparsing.Keyword("xor")
+    xnor_ = pyparsing.Keyword("xnor")
+    not_ = pyparsing.Keyword("not")
+    true_ = pyparsing.Keyword("true")
+    false_ = pyparsing.Keyword("false")
 
-    not_op = not_ | '~' | '¬'
-    and_op = and_ | nand_ | '&' | '∧'
-    xor_op = xor_ | xnor_ | '⊕' | '⊻'
-    or_op = or_ | nor_ | '|' | '∨' | '+'
+    not_op = not_ | "~" | "¬"
+    and_op = and_ | nand_ | "&" | "∧"
+    xor_op = xor_ | xnor_ | "⊕" | "⊻"
+    or_op = or_ | nor_ | "|" | "∨" | "+"
 
     expr = pyparsing.Forward()
 
-    identifier = ~(and_ | or_ | nand_ | nor_ | not_ | true_ | false_) + \
-        pyparsing.Word('$' + pyparsing.alphas + '_', pyparsing.alphanums + '_' + '$')
+    identifier = ~(and_ | or_ | nand_ | nor_ | not_ | true_ | false_) + pyparsing.Word(
+        "$" + pyparsing.alphas + "_", pyparsing.alphanums + "_" + "$"
+    )
 
-    expr = pyparsing.infixNotation(true_ | false_ | identifier,
-                                   [(not_op, 1, pyparsing.opAssoc.RIGHT),
-                                    (and_op, 2, pyparsing.opAssoc.LEFT),
-                                    (or_op, 2, pyparsing.opAssoc.LEFT),
-                                    (xor_op, 2, pyparsing.opAssoc.LEFT)])
+    expr = pyparsing.infixNotation(
+        true_ | false_ | identifier,
+        [
+            (not_op, 1, pyparsing.opAssoc.RIGHT),
+            (and_op, 2, pyparsing.opAssoc.LEFT),
+            (or_op, 2, pyparsing.opAssoc.LEFT),
+            (xor_op, 2, pyparsing.opAssoc.LEFT),
+        ],
+    )
 
     return expr.parseString(logicstr)[0]
 
 
 def to_tree(pres):
-    ''' Convert the parsed logic expression into a LogicTree '''
+    """Convert the parsed logic expression into a LogicTree"""
     invertfunc = False
 
-    if pres[0] in ['not', '~', '¬']:
+    if pres[0] in ["not", "~", "¬"]:
         if isinstance(pres[1], str):
-            return LogicTree('not', to_tree(pres[1]))
+            return LogicTree("not", to_tree(pres[1]))
         else:
             pres = pres[1]
             invertfunc = True
@@ -84,36 +91,49 @@ def to_tree(pres):
     # print(f"inputs are {inputs}")
     # input()
 
-    func = {'&': 'and', '∧': 'and',
-            '|': 'or', '∨': 'or',  '+': 'or',
-            '⊕': 'xor', '⊻': 'xor'}.get(func, func)
+    func = {
+        "&": "and",
+        "∧": "and",
+        "|": "or",
+        "∨": "or",
+        "+": "or",
+        "⊕": "xor",
+        "⊻": "xor",
+    }.get(func, func)
 
     if invertfunc:
-        func = {'and': 'nand', 'or': 'nor', 'not': 'buf',
-                'nand': 'and', 'nor': 'or', 'buf': 'not',
-                'xor': 'xnor', 'xnor': 'xor'}.get(func)
+        func = {
+            "and": "nand",
+            "or": "nor",
+            "not": "buf",
+            "nand": "and",
+            "nor": "or",
+            "buf": "not",
+            "xor": "xnor",
+            "xnor": "xor",
+        }.get(func)
 
     return LogicTree(func, *[to_tree(i) for i in inputs])
 
 
-def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
-    ''' Draw the LogicTree to a schemdraw Drawing
+def drawlogic(tree, gateH=0.7, gateW=2, outlabel=None):
+    """Draw the LogicTree to a schemdraw Drawing
 
-        Parameters
-        ----------
-        tree: LogicTree
-            The tree structure to draw
-        gateH: float
-            Height of one gate
-        gateW: float
-            Width of one gate
-        outlabel: string
-            Label for logic output
+    Parameters
+    ----------
+    tree: LogicTree
+        The tree structure to draw
+    gateH: float
+        Height of one gate
+    gateW: float
+        Width of one gate
+    outlabel: string
+        Label for logic output
 
-        Returns
-        -------
-        schemdraw.Drawing
-    '''
+    Returns
+    -------
+    schemdraw.Drawing
+    """
     drawing = schemdraw.Drawing()
     drawing.unit = gateW  # NOTs still use d.unit
 
@@ -123,25 +143,39 @@ def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
 
     SINGLE_OPERAND_OPS = ("not", "~", "-")
 
-    DOUBLE_OPERAND_OPS = ("and", "nand", "or", "nor", "xor", "xnor", "=>", "implies", "=", "!=")
+    DOUBLE_OPERAND_OPS = (
+        "and",
+        "nand",
+        "or",
+        "nor",
+        "xor",
+        "xnor",
+        "=>",
+        "implies",
+        "=",
+        "!=",
+    )
 
     def drawit(root, depth=0, outlabel=None, curr_index=0):
-        ''' Recursive drawing function '''
-        elmdefs = {'and': logic.And,
-                   'or': logic.Or,
-                   'xor': logic.Xor,
-                   'nand': logic.Nand,
-                   'xnor': logic.Xnor,
-                   'nor': logic.Nor,
-                   'not': logic.Not}
-        elm = elmdefs.get(root.node, logic.And) #if gate not in defintions, use logic.And
+        """Recursive drawing function"""
+        elmdefs = {
+            "and": logic.And,
+            "or": logic.Or,
+            "xor": logic.Xor,
+            "nand": logic.Nand,
+            "xnor": logic.Xnor,
+            "nor": logic.Nor,
+            "not": logic.Not,
+        }
+        elm = elmdefs.get(
+            root.node, logic.And
+        )  # if gate not in defintions, use logic.And
 
-        x = root.y * -gateW   # buchheim draws vertical trees, so flip x-y.
+        x = root.y * -gateW  # buchheim draws vertical trees, so flip x-y.
         y = -root.x * gateH
 
-
-        #WARNING: going to assume that there are only two children
-        #TODO: Fix this to allow for any number of children
+        # WARNING: going to assume that there are only two children
+        # TODO: Fix this to allow for any number of children
 
         to_use_label = chr(ord("A") + curr_index)
         curr_index += 1
@@ -151,14 +185,13 @@ def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
         left_node = None
         right_node = None
 
-        g = elm(d='r', at=(x, y), anchor='end',
-                l=gateW, inputs=len(root.children))
+        g = elm(d="r", at=(x, y), anchor="end", l=gateW, inputs=len(root.children))
         if outlabel:
-            g.label(outlabel, loc='end')
+            g.label(outlabel, loc="end")
 
         # NOTE: This part is slightly weird? Why not just one loop
         for i, child in enumerate(root.children):
-            anchorname = 'start' if elm in [logic.Not, logic.Buf] else f'in{i+1}'
+            anchorname = "start" if elm in [logic.Not, logic.Buf] else f"in{i+1}"
             # in probably stands for input number
             # so basically if child.node is an input put it as a input number thing. else something else idc
             if child.node not in elmdefs:
@@ -173,9 +206,11 @@ def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
         drawing.add(g)
 
         for i, child in enumerate(root.children):
-            anchorname = 'start' if elm in [logic.Not, logic.Buf] else f'in{i+1}'
+            anchorname = "start" if elm in [logic.Not, logic.Buf] else f"in{i+1}"
             if child.node in elmdefs:
-                childelm, curr_index, output_node = drawit(child, depth+1, curr_index=curr_index)  # recursive
+                childelm, curr_index, output_node = drawit(
+                    child, depth + 1, curr_index=curr_index
+                )  # recursive
                 drawing.add(RightLines(at=(g, anchorname), to=childelm.end))
                 if i == 0:
                     left_node = output_node
@@ -183,7 +218,9 @@ def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
                     right_node = output_node
 
         if root.node in DOUBLE_OPERAND_OPS:
-            node = double_operand_gate_node(left_node, right_node, root.node, to_use_label)
+            node = double_operand_gate_node(
+                left_node, right_node, root.node, to_use_label
+            )
         else:
             node = single_operand_gate_node(left_node, root.node, to_use_label)
         return g, curr_index, node
@@ -192,27 +229,28 @@ def drawlogic(tree, gateH=.7, gateW=2, outlabel=None):
     return drawing, node
 
 
-def logicparse(expr: str, gateW: float = 2, gateH: float = .75,
-               outlabel: Optional[str] = None) -> (schemdraw.Drawing, Node):
-    ''' Parse a logic string expression and draw the gates in a schemdraw Drawing
+def logicparse(
+    expr: str, gateW: float = 2, gateH: float = 0.75, outlabel: Optional[str] = None
+) -> (schemdraw.Drawing, Node):
+    """Parse a logic string expression and draw the gates in a schemdraw Drawing
 
-        Logic expression is defined by string using 'and', 'or', 'not', etc.
-        for example, "a or (b and c)". Parser recognizes several symbols and
-        names for logic functions:
-        [and, '&', '∧']
-        [or, '|', '∨', '+']
-        [xor, '⊕', '⊻']
-        [not, '~', '¬']
+    Logic expression is defined by string using 'and', 'or', 'not', etc.
+    for example, "a or (b and c)". Parser recognizes several symbols and
+    names for logic functions:
+    [and, '&', '∧']
+    [or, '|', '∨', '+']
+    [xor, '⊕', '⊻']
+    [not, '~', '¬']
 
-        Args:
-            expr: Logic expression
-            gateH: Height of one gate
-            gateW: Width of one gate
-            outlabel: Label for logic output
+    Args:
+        expr: Logic expression
+        gateH: Height of one gate
+        gateW: Width of one gate
+        outlabel: Label for logic output
 
-        Returns:
-            schemdraw.Drawing with logic tree
-    '''
+    Returns:
+        schemdraw.Drawing with logic tree
+    """
     parsed = parse_string(expr)
     # print(parsed)
     # print("here")
