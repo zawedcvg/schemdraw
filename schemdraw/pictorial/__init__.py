@@ -16,5 +16,6 @@ from .pictorial import (
     Diode,
     TO92,
     DIP,
-    Breadboard)
+    Breadboard,
+)
 from .fritz import FritzingPart, fritz_parts

@@ -1,26 +1,27 @@
-''' CSS/SVG Unit Conversions per
-    https://www.w3.org/TR/css-values/#absolute-lengths
-'''
-PT_PER_IN = 72.
-PX_PER_IN = 96.
+"""CSS/SVG Unit Conversions per
+https://www.w3.org/TR/css-values/#absolute-lengths
+"""
+
+PT_PER_IN = 72.0
+PX_PER_IN = 96.0
 CM_PER_IN = 2.54
 MM_PER_IN = CM_PER_IN * 10
-PC_PER_IN = 6.
+PC_PER_IN = 6.0
 
 PX_PER_PT = PX_PER_IN / PT_PER_IN
 
 TO_PX = {
-    'in': PX_PER_IN,
-    'cm': PX_PER_IN / CM_PER_IN,
-    'mm': PX_PER_IN / MM_PER_IN,
-    'pt': PX_PER_IN / PT_PER_IN,
-    'pc': PX_PER_IN / PC_PER_IN,
-    'px': 1,
+    "in": PX_PER_IN,
+    "cm": PX_PER_IN / CM_PER_IN,
+    "mm": PX_PER_IN / MM_PER_IN,
+    "pt": PX_PER_IN / PT_PER_IN,
+    "pc": PX_PER_IN / PC_PER_IN,
+    "px": 1,
 }
 
 
 def parse_size_to_px(value: str) -> float:
-    ''' Convert SVG size string (such as `2in`) to pixels '''
+    """Convert SVG size string (such as `2in`) to pixels"""
     try:
         value_px = float(value)
     except ValueError:

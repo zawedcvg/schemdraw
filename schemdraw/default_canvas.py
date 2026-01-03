@@ -1,3 +1,3 @@
-''' The default canvas to draw on '''
+"""The default canvas to draw on"""
 
-default_canvas = 'matplotlib'
+default_canvas = "matplotlib"

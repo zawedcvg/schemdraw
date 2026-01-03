@@ -69,7 +69,6 @@ class Node:
             return self.label
 
     def evaluate_given_inputs(self, inputs, faulty_set):
-
         if self.is_leaf_node:
             return inputs[self.value]
 
@@ -183,7 +182,10 @@ class Circuit:
         return node.is_leaf_node
 
     def evaluate_with_faults(self, inputs, faulty_set):
-        return self.gates[self.head].evaluate_given_inputs(inputs, faulty_set)
+        try:
+            return self.gates[self.head].evaluate_given_inputs(inputs, faulty_set)
+        except Exception:
+            pretty_print_tree(self.gates[self.head])
 
     def save_circuit(self):
         circuit_representation = []
@@ -244,7 +246,6 @@ def create_circuit_from_list(circuit_representation: list):
         req_dict[label] = [gate, left_notation, right_notation]
 
     def traverse_and_create_node(label):
-        print(label)
         if label.islower():
             return leaf_node(label)
 
@@ -265,40 +266,43 @@ def create_circuit_from_list(circuit_representation: list):
     return create_circuit_with_head_node(head_node)
 
 
-
 if __name__ == "__main__":
     # TODO: add more sanity tests
-    a_node = leaf_node("a")
-    b_node = leaf_node("b")
-    c_node = leaf_node("c")
-
-    a_and_b_node = double_operand_gate_node(a_node, b_node, "and", "A")
-    a_and_b_or_c_node = double_operand_gate_node(a_and_b_node, c_node, "or", "B")
-
-    circuit = Circuit()
-
-    circuit.add_node(a_and_b_node, False)
-    circuit.add_node(a_and_b_or_c_node, True)
-
-    inputs = {"a": 1, "b": 1, "c": 1}
-
-    a = circuit.evaluate_with_faults(inputs, ["B"])
-    print(a)
-
-    faulty_set = find_minimal_faulty_gates(circuit, inputs, 0)
-    print(faulty_set)
-
-    checker_circuit = (
-        "(not((z xor (not x))) nand (not((z xnor (not y))) nand (x and (not y))))"
-    )
-
-    # faulty_gates are B, C and A
-    k, node = logic_parser.logicparse(checker_circuit)
-    circuit = create_circuit_with_head_node(node)
-    circuit_rep = circuit.save_circuit()
-    a = create_circuit_from_list(circuit_rep)
-    saved_circuit = a.save_circuit()
-    print("----------------------------------------")
-    print(saved_circuit)
-    print(circuit_rep)
-    k.draw()
+    # a_node = leaf_node("a")
+    # b_node = leaf_node("b")
+    # c_node = leaf_node("c")
+    #
+    # a_and_b_node = double_operand_gate_node(a_node, b_node, "and", "A")
+    # a_and_b_or_c_node = double_operand_gate_node(a_and_b_node, c_node, "or", "B")
+    #
+    # circuit = Circuit()
+    #
+    # circuit.add_node(a_and_b_node, False)
+    # circuit.add_node(a_and_b_or_c_node, True)
+    #
+    # inputs = {"a": 1, "b": 1, "c": 1}
+    #
+    # a = circuit.evaluate_with_faults(inputs, ["B"])
+    # print(a)
+    #
+    # faulty_set = find_minimal_faulty_gates(circuit, inputs, 0)
+    # print(faulty_set)
+    #
+    # checker_circuit = (
+    #     "(not((z xor (not x))) nand (not((z xnor (not y))) nand (x and (not y))))"
+    # )
+    #
+    # # faulty_gates are B, C and A
+    # k, node = logic_parser.logicparse(checker_circuit)
+    # circuit = create_circuit_with_head_node(node)
+    # circuit_rep = circuit.save_circuit()
+    # a = create_circuit_from_list(circuit_rep)
+    # saved_circuit = a.save_circuit()
+    # print("----------------------------------------")
+    # print("Sanity check. check that both are the same")
+    #
+    # pretty_print_tree(a.gates[a.head])
+    # pretty_print_tree(circuit.gates[circuit.head])
+    # print(circuit_rep == saved_circuit)
+    # k.draw()
+    pass

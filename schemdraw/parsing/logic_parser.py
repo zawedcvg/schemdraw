@@ -1,4 +1,4 @@
-""" Module for converting a logic string expression into a schemdraw.Drawing.
+"""Module for converting a logic string expression into a schemdraw.Drawing.
 
 Example:
 
@@ -191,7 +191,7 @@ def drawlogic(tree, gateH=0.7, gateW=2, outlabel=None):
 
         # NOTE: This part is slightly weird? Why not just one loop
         for i, child in enumerate(root.children):
-            anchorname = "start" if elm in [logic.Not, logic.Buf] else f"in{i+1}"
+            anchorname = "start" if elm in [logic.Not, logic.Buf] else f"in{i + 1}"
             # in probably stands for input number
             # so basically if child.node is an input put it as a input number thing. else something else idc
             if child.node not in elmdefs:
@@ -206,7 +206,7 @@ def drawlogic(tree, gateH=0.7, gateW=2, outlabel=None):
         drawing.add(g)
 
         for i, child in enumerate(root.children):
-            anchorname = "start" if elm in [logic.Not, logic.Buf] else f"in{i+1}"
+            anchorname = "start" if elm in [logic.Not, logic.Buf] else f"in{i + 1}"
             if child.node in elmdefs:
                 childelm, curr_index, output_node = drawit(
                     child, depth + 1, curr_index=curr_index
@@ -252,8 +252,6 @@ def logicparse(
         schemdraw.Drawing with logic tree
     """
     parsed = parse_string(expr)
-    # print(parsed)
-    # print("here")
     tree = to_tree(parsed)
     drawing, node = drawlogic(tree, gateH=gateH, gateW=gateW, outlabel=outlabel)
     return drawing, node
